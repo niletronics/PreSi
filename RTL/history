@@ -1,0 +1,7 @@
+rm -fr work
+ls vfiles.f
+ls test.mem
+vlib work
+vlog +incdir+hdl -f vfiles.f 
+vsim -c top
+ls out.mem
