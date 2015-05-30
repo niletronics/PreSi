@@ -1,0 +1,7 @@
+# vsim -c -novopt fetch_chkr.sv 
+# Start time: 17:51:05 on May 28,2015
+# ** Error: (vsim-19) Failed to access library 'fetch_chkr' at "fetch_chkr".
+# No such file or directory. (errno = ENOENT)
+# Error loading design
+# End time: 17:51:05 on May 28,2015
+# Errors: 1, Warnings: 0

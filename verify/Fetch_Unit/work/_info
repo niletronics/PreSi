@@ -7,4 +7,26 @@ z2
 !i10e 25
 !i10f 100
 cModel Technology
-d/u/nverma/Documents/PreSi/PreSi/verify/Fetch_Unit
+Z0 d/u/nverma/Documents/PreSi/PreSi/verify/Fetch_Unit
+Xpdp8_pkg
+DXx6 sv_std 3 std 0 22 <EOTafDcUY:cQeO^ICn]m3
+!s110 1432860859
+!i10b 1
+!s100 e@WMJ;6U__SXF_hdjZY_]0
+Ici:gi=FnkE[7?fUgTzFQU2
+Vci:gi=FnkE[7?fUgTzFQU2
+S1
+R0
+w1432588651
+8../../RTL/hdl/pdp8_pkg.sv
+F../../RTL/hdl/pdp8_pkg.sv
+L0 25
+OE;L;10.3;59
+r1
+!s85 0
+31
+!s108 1432860859.241668
+!s107 fetch_chkr.sv|../../RTL/hdl/pdp8_pkg.sv|
+!s90 -sv|-f|filelist.f|
+!i111 0
+o-sv -L mtiAvm -L mtiOvm -L mtiUvm -L mtiUPF -L infact

@@ -1,1 +1,2 @@
-fetch_tb.sv
+../../RTL/hdl/pdp8_pkg.sv
+fetch_chkr.sv
