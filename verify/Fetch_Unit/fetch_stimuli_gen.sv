@@ -17,22 +17,24 @@
 `include "pdp8_pkg.sv"
 import pdp8_pkg::*;
 
-module fetch_chkr
+module fetch_stimuli_gen
  (
-	input	clk,
+	input	ifu_rd_req,
 	input	[`DATA_WIDTH -1:0]	num_stimuli,
-	output	[`ADDR_WIDTH-1:0]	generated_rd_addr
+	output	[`ADDR_WIDTH-1:0]	generated_data
  );
  
  parameter CYCLE_TO_LATCH_FIRST_DATA = 2;
- reg	[`ADDR_WIDTH-1:0]	int_rd_addr;
+ reg	[`ADDR_WIDTH-1:0]	int_generated_data;
  
- always @(negedge clk)
+ initial
 	begin
-		for (int_num_stimuli = 0; int_num_stimuli < num_stimuli; int_num_stimuli = int_num_stimuli + 1)
-			begin
-				int_rd_addr = ({$random} % 8'hff);
-				$display ("\n@ %0d ns Starting test sequence number %0d with address %h\n", $time,int_num_stimuli,generated_rd_addr);
-			end
+		repeat (num_stimuli)
+		begin
+			@(posedge ifu_rd_req);
+			int_generated_data = 12'o7000;
+		//			int_generated_data = ({$random} % 8'hff);
+			$display ("\n@ %0d ns Starting test sequence number %0d with address %h\n", $time, generated_data);
+		end
 	end
 endmodule
