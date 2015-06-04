@@ -21,18 +21,21 @@ module fetch_stimuli_gen
  (
 	input	ifu_rd_req,
 	input	[`DATA_WIDTH -1:0]	num_stimuli,
-	output	[`ADDR_WIDTH-1:0]	generated_data
+	
+	output	logic	stall=0,
+	output	logic	[`ADDR_WIDTH-1:0]	generated_data,
+	output	logic	[`ADDR_WIDTH-1:0]	PC_value
  );
  
  parameter CYCLE_TO_LATCH_FIRST_DATA = 2;
- reg	[`ADDR_WIDTH-1:0]	int_generated_data;
+ 
  
  initial
 	begin
 		repeat (num_stimuli)
 		begin
 			@(posedge ifu_rd_req);
-			int_generated_data = 12'o7000;
+			generated_data = 12'o7000;
 		//			int_generated_data = ({$random} % 8'hff);
 			$display ("\n@ %0d ns Starting test sequence number %0d with address %h\n", $time, generated_data);
 		end
