@@ -9,18 +9,18 @@
 //   Project:      Hardware implementation of PDP8 
 //                 Instruction Set Architecture (ISA) level simulator
 //
-//   Filename:     instr_exec.sv
-//   Description:  TBD
-//   Created by:   Tareque Ahmad
-//   Date:         May 03, 2015
+//   Filename:     top.sv
+//   Description:  Wrapper Module for the verfication. Total Care has been taken to ensure that DUT need not to be modified.
+//   Created by:   Nilesh Dattani
+//   Date:         June 06, 2015
 //
-//   Copyright:    Tareque Ahmad 
+//   Copyright:    Tareque Ahmad
 // =======================================================================
-
+//
 `include "pdp8_pkg.sv"
 import pdp8_pkg::*;
 
-module instr_exec_tb();
+module top(
    
     // From clkgen_driver module
    wire clk,                              // Free running clock
@@ -46,10 +46,10 @@ module instr_exec_tb();
    wire  [`DATA_WIDTH-1:0] ifu_rd_data,   // Not to be used
    
    // From responder module
-   wire   [`DATA_WIDTH-1:0] exec_rd_data  // Read data returned by memory
+   wire   [`DATA_WIDTH-1:0] exec_rd_data);// Read data returned by memory
 
    //---------------------ClockGen_Drive Instantiation-------------//
-      clkgen_driver #(
+    clkgen_driver #(
       .CLOCK_PERIOD(10),
       .RESET_DURATION(500)) clkgen_exe (
       .clk     (clk),
@@ -80,7 +80,7 @@ module instr_exec_tb();
    .exec_rd_data  // Read data returned by responder
    );
     //------------------Responder/Memory Instantiation-------------//
-    memory_pdp	exe_memory_pdp(
+     responder	exe_memory_pdp(
    //------From ClockGen_Driver------------
 	.clk,
 	//--------------------Not to be driven------------------//
@@ -99,31 +99,34 @@ module instr_exec_tb();
    );
 	//-------------------Initiator Instantiation-------------------//
 	exe_initiator  initiator_exe(
-	.base_addr,
-	.pdp_mem_opcode,
-	.pdp_op7_opcode,
-	.stall,
-	PC_value
-	);
-   //---------------------Checker Instantiation--------------------//
-	checker_exe ckr(
 	.clk,
 	.reset_n,
 	.base_addr,
 	.pdp_mem_opcode,
 	.pdp_op7_opcode,
 	.stall,
-	.PC_value,
-	.exec_wr_req,
-	.exec_wr_addr,
-	.exec_wr_data,
-	.exec_rd_req, 
-	.exec_rd_addr,
-	.ifu_rd_req,	
-    .ifu_rd_addr, 
-    .ifu_rd_data,
-	.exec_rd_data
-	);
-
-
+	.PC_value
+	); 
+   //---------------------Checker Instantiation--------------------//
+	bind instr_exec:DUT exec_chkr execute_chkr(
+						.clk,                              
+						.reset_n,                          
+						.base_addr,      
+						.pdp_mem_opcode,  
+						.pdp_op7_opcode, 
+						.stall,        
+						.PC_value,    
+						.exec_wr_req,  
+						.exec_wr_addr, 
+						.exec_wr_data, 
+						.exec_rd_req, 
+						.exec_rd_addr,  
+						.exec_rd_data, 
+						.intAcc, 
+						.intLink,
+						.current_state
+						);
+	
+	
+endmodule
 	  

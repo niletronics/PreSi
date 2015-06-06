@@ -1,18 +1,18 @@
 // =======================================================================
 //   Department of Electrical and Computer Engineering
-//   Portland State University
+//   Portland State Unversity
 //
 //   Course name:  ECE 510 - Pre-Silicon Validation
-//   Term & Year:  Spring 2015
+//   Term & Year:  Spring 2014
 //   Instructor :  Tareque Ahmad
 //
 //   Project:      Hardware implementation of PDP8 
 //                 Instruction Set Architecture (ISA) level simulator
 //
 //   Filename:     pdp8_pkg.sv
-//   Description:  Package file for PDP8 implementation
+//   Description:  TBD
 //   Created by:   Tareque Ahmad
-//   Date:         May 04, 2015
+//   Date:         May 03, 2014
 //
 //   Copyright:    Tareque Ahmad 
 // =======================================================================
@@ -21,14 +21,13 @@
 timeunit 1ns;
 timeprecision 1ns;
 
+
 // Pacakge definition
 package pdp8_pkg;
-
-`define MEM_FILENAME "test.mem"
+`timescale 1ns / 1ns
+`define MEM_FILENAME "big.mem"
 `define OUT_FILENAME "out.mem"
-
 `define START_ADDRESS 12'o0200
-
 `define ADDR_WIDTH 12
 `define DATA_WIDTH 12
 
@@ -50,6 +49,28 @@ typedef struct packed {
    logic [`DATA_WIDTH-1:0] mem_inst_addr;
 
 } pdp_mem_opcode_s;
+
+  typedef enum {IDLE,
+         STALL,
+         BRANCH,
+         READY,
+         CLA,
+         CLA_CLL,
+         SEND_REQ,
+         INST_DEC,
+         MEM_RD_REQ,
+         DATA_RCVD,
+         ADD_ACC_MEM,
+         AND_ACC_MEM,
+         ISZ_WR_REQ,
+         ISZ_UPDT_PC,
+         DCA,
+         JMS_WR_REQ,
+         JMS_UPDT_PC,
+         JMP,
+         NOP,
+         DONE, 
+         UNSTALL } state;
 
 // Defines for op7 instructions
 `define NOP 12'o7000
