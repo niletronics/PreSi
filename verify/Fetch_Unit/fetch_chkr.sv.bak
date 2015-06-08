@@ -60,8 +60,6 @@ module fetch_chkr
   /*  input str;
    $display("%m: at %t \t %s",str); */
    endtask
-   
-   initial $monitor("PC_value = %o", PC_value);
   
    always_ff@(posedge clk)
 	begin
@@ -77,7 +75,6 @@ module fetch_chkr
             chkr_pdp_op7_opcode		= '{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 			if (base_addr != chkr_base_addr)
 				$display ("\n@ %0d ns ERROR: In IDLE STATE, \n the base_addr signal is %h and chkr_base_addr is %h", $time, base_addr, chkr_base_addr);
-			$display("%m");
 		end
 		else if (reset_n == HIGH)
 			counter++;
@@ -95,7 +92,7 @@ module fetch_chkr
 						chkr_pdp_mem_opcode = '{0,0,0,0,0,0,9'bz};
 						chkr_pdp_op7_opcode = '{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 						chkr_rd_req = 1;
-//						$display ("\n@ %0d ns INFO: In SEND_REQ STATE, \nthe ifu_rd_req signal is %h and chkr_rd_req is %h", $time, ifu_rd_req, chkr_rd_req);
+						$display ("\n@ %0d ns INFO: In SEND_REQ STATE, \nthe ifu_rd_req signal is %h and chkr_rd_req is %h", $time, ifu_rd_req, chkr_rd_req);
 						if (ifu_rd_req != chkr_rd_req)
 							$display ("\n@ %0d ns ERROR: In SEND_REQ STATE, \nthe ifu_rd_req signal is %h and chkr_rd_req is %h", $time, ifu_rd_req, chkr_rd_req);
 					end
@@ -103,11 +100,12 @@ module fetch_chkr
 		3'b011:		begin					//DATA_RCVD STATE
 						chkr_rd_req = 0;
 						if (ifu_rd_req != chkr_rd_req)
-							$display ("\n@ %0d ns ERROR: In DATA_RCVD STATE, \nthe ifu_rd_req signal is %h and chkr_rd_req is %h", $time, ifu_rd_req, chkr_rd_req);
+							$display ("\n@ %0d ns ERROR: In SEND_REQ STATE, \nthe ifu_rd_req signal is %h and chkr_rd_req is %h", $time, ifu_rd_req, chkr_rd_req);
 						chkr_rd_data = ifu_rd_data;
 					end
 					
 		3'b100:		begin					// INSTN_DEC STATE
+						$display("%m");
 						if (chkr_rd_data[`DATA_WIDTH-1:`DATA_WIDTH-3] < 6)
 						begin
 							case (chkr_rd_data[`DATA_WIDTH-1:`DATA_WIDTH-3])
@@ -119,9 +117,8 @@ module fetch_chkr
 								`JMP:		chkr_pdp_mem_opcode	= '{0,0,0,0,0,1,chkr_rd_data[8:0]};
 								default:	chkr_pdp_mem_opcode	= '{0,0,0,0,0,0,9'bz};
 							endcase
-							$display ("\n %m at %d \nINFO: In INSTN_DEC STATE\nDUT MEM_OPCODE = %p \nChecker MEM_OPCODE = %p", $time, pdp_mem_opcode, chkr_pdp_mem_opcode);
 							if (pdp_mem_opcode != chkr_pdp_mem_opcode)
-								$display ("\n@ %0d ns ERROR: In INSTN_DEC STATE, \nthe pdp_mem_opcode signal is %h and chkr_pdp_mem_opcode is %h", $time, pdp_mem_opcode, chkr_pdp_mem_opcode);
+								$display ("\n@ %0d ns ERROR: In SEND_REQ STATE, \nthe pdp_mem_opcode signal is %h and chkr_pdp_mem_opcode is %h", $time, pdp_mem_opcode, chkr_pdp_mem_opcode);
 						end
 						else if (chkr_rd_data[`DATA_WIDTH-1:`DATA_WIDTH-3] == 7)
 						begin
@@ -150,15 +147,15 @@ module fetch_chkr
 								`CLA2   : chkr_pdp_op7_opcode = '{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
 								default : chkr_pdp_op7_opcode = '{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //NOP
 							endcase
-							$display ("\n %m at %d \nINFO: In INSTN_DEC STATE\nDUT OP7_OPCODE = %p \nChecker OP7_OPCODE = %p", $time, pdp_op7_opcode, chkr_pdp_op7_opcode);
 							if (pdp_op7_opcode != chkr_pdp_op7_opcode)
-								$display ("\n@ %0d ns ERROR: In INSTN_DEC STATE, \nthe pdp_op7_opcode signal is %h and chkr_pdp_op7_opcode is %h", $time, pdp_op7_opcode, chkr_pdp_op7_opcode);
+								$display ("\n@ %0d ns ERROR: In SEND_REQ STATE, \nthe pdp_op7_opcode signal is %h and chkr_pdp_op7_opcode is %h", $time, pdp_op7_opcode, chkr_pdp_op7_opcode);
 						end
 						else
 						begin
 							chkr_pdp_mem_opcode = '{0,0,0,0,0,0,9'bz};
 							chkr_pdp_op7_opcode = '{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // NOP
 						end
+						$display ("\n %m at %t \t DUT OPCODE = %p Checker OPCODE = %p", $time, pdp_op7_opcode, chkr_pdp_op7_opcode);
 					end
 					
 		3'b101:		begin					//STALL STATE
