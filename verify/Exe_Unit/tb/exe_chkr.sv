@@ -33,20 +33,23 @@ module exec_chkr
    
    reg                     new_mem_opcode; // Signal to detect a new memory instruction
    reg                     new_op7_opcode; // Signal to detect a new op7 instruction
-   reg  [`DATA_WIDTH:0]    intAcc_checker; 
-   reg                     intLink_checker;   
-   reg [`ADDR_WIDTH-1:0]   PC_value_checker;
-   reg  [`DATA_WIDTH-1:0]  int_write_data;
-   reg  [`ADDR_WIDTH-1:0] int_exec_wr_addr;
-   reg  [`ADDR_WIDTH-1:0] int_exec_rd_addr;
-   reg  [`ADDR_WIDTH-1:0]   int_PC_value;
-   reg  [`DATA_WIDTH-1:0]  int_exec_wr_data;
+   reg  [`DATA_WIDTH:0]    	chkr_ac; 
+   reg						chkr_link;   
+   bit [`ADDR_WIDTH-1:0]	chkr_PC = `START_ADDRESS;
+   bit [`ADDR_WIDTH-1:0]	chkr_tempPC = `START_ADDRESS;
+   reg  [`DATA_WIDTH-1:0]	int_write_data;
+   reg  [`ADDR_WIDTH-1:0]	int_exec_wr_addr;
+   reg  [`ADDR_WIDTH-1:0]	int_exec_rd_addr,chkr_rd_addr, chkr_wr_addr;
+   reg  [`ADDR_WIDTH-1:0]	int_PC_value;
+   reg  [`DATA_WIDTH-1:0]	int_exec_wr_data, chkr_rd_data, chkr_wr_data;
+   bit 						chkr_rd_req, chkr_wr_req;
+   bit 						debug=1;
    
     pdp_mem_opcode_s int_pdp_mem_opcode;  // Decoded signals for memory instructions
    pdp_op7_opcode_s int_pdp_op7_opcode; 
-    //PC_value_checker = PC_value;
+    //chkr_PC = PC_value;
     //int_PC_value = PC_value;
-    assign int_exec_wr_data = exec_wr_data;
+/*     assign int_exec_wr_data = exec_wr_data;
    assign int_exec_rd_addr = exec_rd_addr;
    assign int_exec_wr_addr = exec_wr_addr;
    assign int_pdp_mem_opcode = pdp_mem_opcode;
@@ -82,64 +85,186 @@ module exec_chkr
                             pdp_op7_opcode.SMA ||
                             pdp_op7_opcode.SPA ||
                             pdp_op7_opcode.CLA2);
-      
+ */      
       
       //FUNCTIONALITY CHECK OF EXECUTION UNIT FOR MEMORY OPCODES: checker source 
+   // Will check for IDLE and Branch to stall transition manually by assertion
+   // Starting from stall to get constant clock cycle count
+   // Rule exec_rd_req should be high only for one clock cycle
+   // Rule to check for PC_value
    
-   always @ (posedge new_mem_opcode or posedge new_op7_opcode)begin
+always @ (posedge clk)	begin
+
+	wait(instr_exec.current_state === BRANCH && instr_exec.stall);
+	chkr_PC 		<= instr_exec.PC_value + 1'b1;
+	chkr_tempPC		<= chkr_PC;	
+	chkr_ac			<= instr_exec.intAcc;
+	case(1'b1) 
+	pdp_mem_opcode.AND : begin
+								@(posedge clk);				//MEM_RD_REQ
+								chkr_rd_req <= 1'b1;
+								chkr_rd_addr <= pdp_mem_opcode.mem_inst_addr;
+								@(posedge clk);				// DATA_RCVD
+								compare(chkr_rd_req, exec_rd_req,"Read Request","AND");
+								compare(chkr_rd_addr, exec_rd_addr,"Read Address","AND");
+								chkr_rd_req <=1'b0;
+								chkr_rd_data <= exec_rd_data;
+								@(posedge clk); 			// AND_ACC_MEM
+								compare(chkr_rd_req, exec_rd_req,"Read Request","AND");
+								chkr_ac <= chkr_ac && chkr_rd_data;
+								@(posedge clk);				// UNSTALL
+								compare(chkr_link,instr_exec.intLink,"LinkBit","AND");
+								compare(chkr_ac,instr_exec.intAcc,"Accumulator","AND");	
+								chkr_wr_req		<= 0;														
+						end
+						
+	pdp_mem_opcode.TAD : begin					
+								@(posedge clk);				//MEM_RD_REQ
+								chkr_rd_req <= 1'b1;
+								chkr_rd_addr <= pdp_mem_opcode.mem_inst_addr;
+								@(posedge clk);				// DATA_RCVD
+								compare(chkr_rd_req, exec_rd_req,"Read Request","TAD");
+								compare(chkr_rd_addr, exec_rd_addr,"Read Address","TAD");
+								chkr_rd_data <= exec_rd_data;
+								chkr_rd_req <=1'b0;
+								@(posedge clk); 			// ADD_ACC_MEM
+								compare(chkr_rd_req, exec_rd_req, "Read Request","TAD");
+								{chkr_link,chkr_ac}<={chkr_link,chkr_ac} + chkr_rd_data;
+								@(posedge clk);				// UNSTALL
+								compare(chkr_link,instr_exec.intLink, "LinkBit","TAD");
+								compare(chkr_ac,instr_exec.intAcc, "Accumulator","TAD");
+								chkr_wr_req		<= 0;
+							end
+	
+	pdp_mem_opcode.ISZ : begin
+								@(posedge clk);				//MEM_RD_REQ
+								chkr_rd_req <= 1'b1;
+								chkr_rd_addr <= pdp_mem_opcode.mem_inst_addr;
+								@(posedge clk);				// DATA_RCVD
+								compare(chkr_rd_req, exec_rd_req,"Read Request","ISZ");
+								compare(chkr_rd_addr, exec_rd_addr,"Read Address","ISZ");
+								chkr_rd_data <= exec_rd_data;
+								chkr_rd_req <=1'b0;
+								@(posedge clk); 			// ISZ_WR_REQ
+								compare(chkr_rd_req, exec_rd_req, "Read Request","ISZ");
+								chkr_wr_req <= 1'b1;
+								chkr_wr_addr <= pdp_mem_opcode.mem_inst_addr;
+								chkr_wr_data <= exec_wr_data+1'b1;
+								chkr_tempPC <= chkr_PC;
+								@(posedge clk);				// ISZ_UPDT_PC
+								compare(chkr_wr_req, exec_wr_req,"Write Request","ISZ");
+								compare(chkr_link,instr_exec.intLink, "LinkBit","ISZ");
+								compare(chkr_ac,instr_exec.intAcc, "Accumulator","ISZ");
+								if(chkr_rd_data == 0)chkr_PC <= chkr_tempPC + 1'b1;
+								@(posedge clk);				// UNSTALL
+								compare(chkr_PC, PC_value,"PC_value","ISZ");
+								chkr_wr_req		<= 0;
+							end
+	
+	pdp_mem_opcode.DCA : begin
+							@(posedge clk);					// DCA
+							chkr_wr_req  <= 1;
+							chkr_wr_addr <= pdp_mem_opcode.mem_inst_addr;
+							chkr_wr_data <= PC_value;							
+							@(posedge clk);					//CLA
+							compare(chkr_wr_req, exec_wr_req,"Write Request","DCA");
+							compare(chkr_wr_addr, exec_wr_addr,"Write Address","DCA");
+							compare(chkr_wr_data, exec_wr_data,"Write Data","DCA");
+							chkr_ac <=1'b0;
+							chkr_link <=1'b0;							
+							@(posedge clk);					// UNSTALL
+							compare(chkr_link,instr_exec.intLink, "LinkBit","DCA");
+							compare(chkr_ac,instr_exec.intAcc, "Accumulator","DCA");
+							chkr_wr_req		<= 0;
+							@(posedge clk);
+							compare(chkr_PC, PC_value,"PC_value","DCA");							
+						end
+						
+	pdp_mem_opcode.JMS : begin
+							@(posedge clk);					// JMS_WR_REQ
+							chkr_wr_req  <= 1;
+							chkr_wr_addr <= pdp_mem_opcode.mem_inst_addr;
+							chkr_wr_data <= chkr_ac;							
+							@(posedge clk);					//JMS_UPDT_PC
+							compare(chkr_wr_req, exec_wr_req,"Write Request","DCA");
+							compare(chkr_wr_addr, exec_wr_addr,"Write Address","DCA");
+							compare(chkr_wr_data, exec_wr_data,"Write Data","DCA");
+							chkr_PC      <= pdp_mem_opcode.mem_inst_addr+1;							
+							@(posedge clk);					// UNSTALL
+							chkr_wr_req		<= 0;
+							@(posedge clk);
+							compare(chkr_PC, PC_value,"PC_value","JMS");
+						end
+						
+	
+	
+						
+	endcase 
+	
+		
+	
    
-     if(pdp_mem_opcode.AND)begin                          //Functional Check for AND instruction
-       intAcc_checker <= intAcc;
-      repeat (5) begin @(posedge clk); end
-       intAcc_checker = intAcc_checker & exec_rd_data;
-       comparision();
-      end
+     /* if(pdp_mem_opcode.AND)begin                          //Functional Check for AND instruction
+		//PC value should increase
+		@(posedge clk);
+		chkr_rd_req <= 1'b1;
+		@(posedge clk);
+		compare(chkr_rd_req, exec_rd_req, "Read Request");
+		@(posedge clk);
+		compare(chkr_rd_req, exec_rd_req, "Read Request one cycle later");
+		@(posedge clk);
+		compare(chkr_rd_req, exec_rd_req, "Read Request two cycle later");
+		chkr_ac <= intAcc;
+		repeat (5) begin @(posedge clk); end
+		chkr_ac = chkr_ac & exec_rd_data;
+		comparision();
+      end */
       
       
-    else if(pdp_mem_opcode.TAD) begin                     //Functional check for TAD instruction
-        intAcc_checker <= intAcc;
-        intLink_checker <= intLink;
+    if(pdp_mem_opcode.TAD) begin                     //Functional check for TAD instruction
+        chkr_ac <= intAcc;
+        chkr_link <= intLink;
         repeat (4) begin @(posedge clk); end
-        intAcc_checker <= intAcc_checker + exec_rd_data;
-        if(intAcc_checker[`DATA_WIDTH]) begin
-        intLink_checker <= ~intLink_checker;
+        chkr_ac <= chkr_ac + exec_rd_data;
+        if(chkr_ac[`DATA_WIDTH]) begin
+        chkr_link <= ~chkr_link;
         comparision();end
         end
       
-    else if (pdp_mem_opcode.ISZ ) begin                           // Functional check for ISZ
+    else if (pdp_mem_opcode.ISZ) begin                           // Functional check for ISZ
         repeat (5) begin @(posedge clk); end 
         if((int_exec_rd_addr !== int_pdp_mem_opcode.mem_inst_addr) &&(int_exec_wr_addr !== int_pdp_mem_opcode.mem_inst_addr))begin
-       $display("@ %0d  Execution of ISZ is failed ",$time);
+		$display("@ %0d  Execution of ISZ is failed ",$time);
         end
       end
       
       
 /*     else if(pdp_mem_opcode.DCA) begin                            //Functional check for DCA instruction
       if(current_state == DCA)begin
-          intAcc_checker <= intAcc;
+          chkr_ac <= intAcc;
         repeat (2) begin @ (posedge clk); end
            comparision();
             end
           end
    else if(pdp_mem_opcode.JMS) begin                            //Functional check for JMS not successfully implemented instead JMS effect on outputs of Execution verified correctly.
-          intAcc_checker <=intAcc;
-          PC_value_checker <=PC_value;
+          chkr_ac <=intAcc;
+          chkr_PC <=PC_value;
    repeat (1) begin @(posedge clk); end  
      
           comparision();
          end
    else if(pdp_mem_opcode.JMP) begin                           // Functional check for JUMP
            if(current_state == UNSTALL)begin
-          PC_value_checker <= PC_value;
+          chkr_PC <= PC_value;
           comparision();
         end
  end  */      
  else if (pdp_op7_opcode.CLA_CLL) begin                      //Functional check for Clear link & Accumulator.
-          intAcc_checker <= intAcc;
-          intLink_checker <= intLink;
+          chkr_ac <= intAcc;
+          chkr_link <= intLink;
    repeat (1) begin @(posedge clk); end
-          intAcc_checker = 0;
-          intLink_checker =0;
+          chkr_ac = 0;
+          chkr_link =0;
           comparision();
     end
   end
@@ -150,35 +275,41 @@ module exec_chkr
    begin
    
   if(pdp_mem_opcode.AND)begin
-    if(intAcc_checker !== intAcc)begin
-      $display(" @ %0d ns Execution of AND instruction failed  Accumulator_checker: %o Accumulator value in Execution unit: %o ",$time,intAcc_checker,intAcc);end 
+    if(chkr_ac !== intAcc)begin
+      $display(" @ %0d ns Execution of AND instruction failed  Accumulator_checker: %o Accumulator value in Execution unit: %o ",$time,chkr_ac,intAcc);end 
 end
   if(pdp_mem_opcode.TAD) begin
-    if((intAcc_checker !== intAcc) || (intLink_checker !== intLink)) begin
-      $display("@ %0d ns Execution of TAD instruction failed  Accumulator_checker: %o Accumulator value in Execution unit: %o & Link_checker :%b Link value in Execution unit : %b",$time,intAcc_checker,intAcc,intLink_checker,intLink);  end
+    if((chkr_ac !== intAcc) || (chkr_link !== intLink)) begin
+      $display("@ %0d ns Execution of TAD instruction failed  Accumulator_checker: %o Accumulator value in Execution unit: %o & Link_checker :%b Link value in Execution unit : %b",$time,chkr_ac,intAcc,chkr_link,intLink);  end
   end
      end
     if(pdp_mem_opcode.DCA) begin
-      if((intAcc_checker !== exec_wr_data) || (intAcc !== 0)) begin
-      $display (" @ %0d nsExecution of DCA instruction failed Accumulator_checker  %o value of Accumulator deposited on exec_wr_data value %o of Accumulator after depositing: %o",$time,intAcc_checker,exec_wr_data,intAcc); end
+      if((chkr_ac !== exec_wr_data) || (intAcc !== 0)) begin
+      $display (" @ %0d nsExecution of DCA instruction failed Accumulator_checker  %o value of Accumulator deposited on exec_wr_data value %o of Accumulator after depositing: %o",$time,chkr_ac,exec_wr_data,intAcc); end
   end
 
    if(pdp_mem_opcode.JMS) begin
-     if(PC_value_checker !== int_exec_wr_data)begin
-     // $display ("  @ %0d Execution of JMS instruction failed Program counter value %o and write data on memory %o",$time,PC_value_checker ,int_exec_wr_data);
+     if(chkr_PC !== int_exec_wr_data)begin
+     // $display ("  @ %0d Execution of JMS instruction failed Program counter value %o and write data on memory %o",$time,chkr_PC ,int_exec_wr_data);
    end
  end
    if(pdp_mem_opcode.JMP) begin
-   if(PC_value_checker !== pdp_mem_opcode.mem_inst_addr) begin
-     $display (" @ %0d nsExecution of JMP instruction failed PC_value_checker: %o pdp_mem_instr_addr: %o ",$time,PC_value_checker,pdp_mem_opcode.mem_inst_addr); end       
+   if(chkr_PC !== pdp_mem_opcode.mem_inst_addr) begin
+     $display (" @ %0d nsExecution of JMP instruction failed chkr_PC: %o pdp_mem_instr_addr: %o ",$time,chkr_PC,pdp_mem_opcode.mem_inst_addr); end       
   end
   if(pdp_op7_opcode.CLA_CLL) begin
-    if(intAcc_checker == intAcc || intLink_checker == intLink)begin
-      $display(" @ %0d ns Execution of clear accumulator and clear link instruction failed intAccumulator_checker %o Accumulator value in DUT %o Link_checker %b Link in DUT %b ",$time,intAcc_checker,intAcc,intLink_checker,intLink); end
+    if(chkr_ac == intAcc || chkr_link == intLink)begin
+      $display(" @ %0d ns Execution of clear accumulator and clear link instruction failed intAccumulator_checker %o Accumulator value in DUT %o Link_checker %b Link in DUT %b ",$time,chkr_ac,intAcc,chkr_link,intLink); end
     end
-
-
   endtask
+
+task compare(input logic[11:0] chkr_value, input logic[11:0] dut_value, input string field, input string opcode_name);
+	begin
+		match_a:assert(chkr_value === dut_value) begin if(debug) $display("%m_%0t:MATCHED\t%0s\tOpcode = %0s\tDUT Value = %0o\tChecker Value = %0o and DUT FSM State = %s",$time,field,opcode_name,dut_value,chkr_value, instr_exec.current_state); end
+		else $error("%m_%0t: NOT MATCHED\t%0s\tOpcode = %0s\tDUT Value = %0o\tChecker Value = %0o and DUT FSM State = %s",$time,field,opcode_name,dut_value,chkr_value, instr_exec.current_state); 
+	end
+endtask
+
   
          
  endmodule    

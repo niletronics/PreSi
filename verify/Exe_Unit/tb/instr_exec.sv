@@ -242,7 +242,7 @@ module instr_exec
          // Write request is asserted
          // PC is NOT changed YET
          // Jumps to ISZ_UPDT_PC state
-         //
+         
          ISZ_WR_REQ:
             begin
                int_exec_wr_req  <= 1;

@@ -55,7 +55,7 @@ module top(
       .clk     (clk),
       .reset_n (reset_n));
 	//---------------------DUT Instantiation-----------------------//
-	instr_exec	DUT(
+	instr_exec	instr_exec(
    // From clkgen_driver module
    .clk,                              // Free running clock
    .reset_n,                          // Active low reset signal
@@ -98,7 +98,7 @@ module top(
 	.exec_wr_data   
    );
 	//-------------------Initiator Instantiation-------------------//
-	exe_initiator  initiator_exe(
+	exe_initiator  exe_initiator(
 	.clk,
 	.reset_n,
 	.base_addr,
@@ -108,7 +108,7 @@ module top(
 	.PC_value
 	); 
    //---------------------Checker Instantiation--------------------//
-	bind instr_exec:DUT exec_chkr execute_chkr(
+	bind instr_exec:instr_exec exec_chkr execute_chkr(
 						.clk,                              
 						.reset_n,                          
 						.base_addr,      

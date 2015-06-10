@@ -102,10 +102,42 @@ pdp_op7_opcode=0;
 pdp_mem_opcode.AND = TRUE;
 @(negedge stall);
 pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
 pdp_op7_opcode.NOP = TRUE;
 @(negedge stall);
+pdp_mem_opcode = 0;
 pdp_op7_opcode=0;
 pdp_op7_opcode.CLA1 = TRUE;
+@(negedge stall);
+pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
+pdp_mem_opcode.TAD = TRUE;
+@(negedge stall);
+pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
+pdp_mem_opcode.AND = TRUE;
+@(negedge stall);
+pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
+pdp_mem_opcode.ISZ  = TRUE;
+@(negedge stall);
+pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
+pdp_mem_opcode.ISZ  = TRUE;
+@(negedge stall);
+pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
+pdp_mem_opcode.JMS  = TRUE;
+@(posedge clk);
+pdp_mem_opcode = 0;
+pdp_op7_opcode=0;
+repeat(5)@(posedge clk);
+
+
+$finish;
+
+
+
 end
 
 

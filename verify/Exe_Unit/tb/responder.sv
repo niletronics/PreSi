@@ -48,7 +48,7 @@ module responder
  
 initial begin
 	forever begin
-		@(posedge exec_rd_req)
+		@(posedge exec_rd_req);
 		exec_rd_data = $urandom_range(0,2**12);
 		if(debug) $display("Data Fed : %d",exec_rd_data);
 	end
