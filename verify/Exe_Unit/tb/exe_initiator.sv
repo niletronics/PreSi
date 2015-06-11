@@ -21,124 +21,76 @@
 `include "pdp8_pkg.sv"
 import pdp8_pkg::*;
 
-
-parameter TRUE = 1'b1;
-parameter FALSE = 1'b0;
-bit debug;
-
-module exe_initiator( 	input wire clk,
+module exe_initiator #(parameter num_stimuli=10, parameter verbose=1, parameter debug=0)
+						( 
+						input wire clk,
 						input wire reset_n,
 						output logic [`ADDR_WIDTH-1:0]base_addr,
 						output pdp_mem_opcode_s pdp_mem_opcode,
 						output pdp_op7_opcode_s pdp_op7_opcode,
 						input stall,
-						input [`ADDR_WIDTH-1:0]PC_value);
+						input [`ADDR_WIDTH-1:0]PC_value
+						);
 						
 assign base_addr = `START_ADDRESS;
 
+parameter TRUE = 1'b1;
+parameter FALSE = 1'b0;
+
+int i;
 
 
 
-class stimulus;
-	int opcode_number;	
-task memcase;
-input integer instruction;
-pdp_mem_opcode = 0;
-unique case(instruction)
-	`AND : pdp_mem_opcode.AND = TRUE;
-	`TAD : pdp_mem_opcode.TAD = TRUE;
-	`ISZ : pdp_mem_opcode.ISZ = TRUE;
-	`DCA : pdp_mem_opcode.DCA = TRUE;
-	`JMS : pdp_mem_opcode.JMS = TRUE;
-	`JMP : pdp_mem_opcode.JMP = TRUE;
-endcase	
-endtask
-
-task op7case;
-input [11:0] instruction;
-pdp_op7_opcode = 0;
-unique case(instruction)
-	
-	`NOP     : pdp_op7_opcode.NOP	   = TRUE; 
-	`IAC     : pdp_op7_opcode.IAC     = TRUE;
-	`RAL     : pdp_op7_opcode.RAL     = TRUE;
-	`RTL     : pdp_op7_opcode.RTL     = TRUE;
-	`RAR     : pdp_op7_opcode.RAR     = TRUE;
-	`RTR     : pdp_op7_opcode.RTR     = TRUE;
-	`CML     : pdp_op7_opcode.CML     = TRUE;
-	`CMA     : pdp_op7_opcode.CMA     = TRUE;
-	`CIA     : pdp_op7_opcode.CIA     = TRUE;
-	`CLL     : pdp_op7_opcode.CLL     = TRUE;
-	`CLA1    : pdp_op7_opcode.CLA1    = TRUE;
-	`CLA_CLL : pdp_op7_opcode.CLA_CLL = TRUE;
-	`HLT     : pdp_op7_opcode.HLT     = TRUE;
-	`OSR     : pdp_op7_opcode.OSR     = TRUE;
-	`SKP     : pdp_op7_opcode.SKP     = TRUE;
-	`SNL     : pdp_op7_opcode.SNL     = TRUE;
-	`SZL     : pdp_op7_opcode.SZL     = TRUE;
-	`SZA     : pdp_op7_opcode.SZA     = TRUE;
-	`SNA     : pdp_op7_opcode.SNA     = TRUE;
-	`SMA     : pdp_op7_opcode.SMA     = TRUE;
-    `SPA     : pdp_op7_opcode.SPA     = TRUE;
-    `CLA2    : pdp_op7_opcode.CLA2    = TRUE;
-endcase
-endtask
-	
-endclass
-
-class stimulus_randomized;
-endclass
+bit		[5:0]				int_mem_opcode = 6'b1;
+bit 	[`DATA_WIDTH-1:0]	int_mem_opcode_addr = 9'b0;
+bit 	[21:0]				int_pdp_op7_opcode = 1;
+bit		[5:0]				new_int_mem_opcode;
+bit 	[`DATA_WIDTH-1:0] 	new_mem_opcode_addr;
+//bit [21:0]new_pdp_op7_opcode;
+pdp_op7_opcode_s new_pdp_op7_opcode;
 
 
 
 initial begin
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-@(negedge stall);
-pdp_op7_opcode.CLA_CLL = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_mem_opcode.AND = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_op7_opcode.NOP = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_op7_opcode.CLA1 = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_mem_opcode.TAD = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_mem_opcode.AND = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_mem_opcode.ISZ  = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_mem_opcode.ISZ  = TRUE;
-@(negedge stall);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-pdp_mem_opcode.JMS  = TRUE;
-@(posedge clk);
-pdp_mem_opcode = 0;
-pdp_op7_opcode=0;
-repeat(5)@(posedge clk);
-
-
-$finish;
-
-
-
+forever begin
+	@(posedge clk);
+	pdp_mem_opcode = {new_int_mem_opcode,new_mem_opcode_addr};
+	pdp_op7_opcode = new_pdp_op7_opcode;
 end
+end
+
+initial begin
+	{new_int_mem_opcode,new_mem_opcode_addr} = 0;
+	new_pdp_op7_opcode=0;
+	new_pdp_op7_opcode.CLA_CLL  = TRUE;	
+	@(negedge stall);
+
+ repeat (num_stimuli)	begin
+			randcase
+				1 : begin
+				{new_pdp_op7_opcode,new_int_mem_opcode} ={22'b0,int_mem_opcode << $urandom_range(0,5)};
+				new_mem_opcode_addr = $urandom_range(0,2**12);
+				if(debug) begin
+					$display("%m:pdp_mem_opcode=%p",pdp_mem_opcode);
+					$display("%m : new_int_mem_opcode = %0b,new_mem_opcode_addr=%0o int_mem_opcode=%0b",new_int_mem_opcode, new_mem_opcode_addr,int_mem_opcode);
+				end
+				@(negedge stall);
+				end
+		
+				2: begin	
+				{new_int_mem_opcode, new_pdp_op7_opcode} = {6'b0,int_pdp_op7_opcode << $urandom_range(0,21)};
+				if(debug) begin
+				$display("%m : new_pdp_op7_opcode = %0b, int_pdp_op7_opcode=%0b",new_pdp_op7_opcode, int_pdp_op7_opcode);
+				end
+				@(negedge stall);
+		end
+		endcase
+		end 
+repeat(10)@(posedge clk);
+$finish;
+end
+
+
 
 
 

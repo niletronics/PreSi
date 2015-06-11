@@ -20,7 +20,7 @@
 `include "pdp8_pkg.sv"
 import pdp8_pkg::*;
 
-module top(
+module top #(parameter verbose = 1, parameter debug =0)(
    
     // From clkgen_driver module
    wire clk,                              // Free running clock
@@ -80,7 +80,7 @@ module top(
    .exec_rd_data  // Read data returned by responder
    );
     //------------------Responder/Memory Instantiation-------------//
-     responder	exe_memory_pdp(
+     responder	#(.verbose(debug)) exe_memory_pdp(
    //------From ClockGen_Driver------------
 	.clk,
 	//--------------------Not to be driven------------------//
@@ -98,7 +98,7 @@ module top(
 	.exec_wr_data   
    );
 	//-------------------Initiator Instantiation-------------------//
-	exe_initiator  exe_initiator(
+	exe_initiator #(.num_stimuli(100000), .verbose(verbose), .debug(debug))  exe_initiator(
 	.clk,
 	.reset_n,
 	.base_addr,
@@ -108,7 +108,7 @@ module top(
 	.PC_value
 	); 
    //---------------------Checker Instantiation--------------------//
-	bind instr_exec:instr_exec exec_chkr execute_chkr(
+	exec_chkr #(.verbose(verbose), .debug(debug))execute_chkr(
 						.clk,                              
 						.reset_n,                          
 						.base_addr,      
@@ -121,10 +121,7 @@ module top(
 						.exec_wr_data, 
 						.exec_rd_req, 
 						.exec_rd_addr,  
-						.exec_rd_data, 
-						.intAcc, 
-						.intLink,
-						.current_state
+						.exec_rd_data
 						);
 	
 	

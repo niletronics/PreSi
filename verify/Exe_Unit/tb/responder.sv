@@ -20,7 +20,7 @@
 `include "pdp8_pkg.sv"
 import pdp8_pkg::*;
 
-module responder
+module responder #(parameter verbose=1)
   (
    // Global input
    input clk,
@@ -39,7 +39,7 @@ module responder
 
    );
 
-   bit debug=1'b1;
+
    reg [`DATA_WIDTH-1:0] int_ifu_rd_data;
    reg [`DATA_WIDTH-1:0] int_exec_rd_data;
    reg [11:0] PDP_memory [0:4095];
@@ -49,8 +49,11 @@ module responder
 initial begin
 	forever begin
 		@(posedge exec_rd_req);
-		exec_rd_data = $urandom_range(0,2**12);
-		if(debug) $display("Data Fed : %d",exec_rd_data);
+		randcase
+			4: begin exec_rd_data = $urandom_range(0,2**12); end
+			1: begin exec_rd_data = 0; end
+		endcase
+		if(verbose) $display("Data Fed : %0o",exec_rd_data);
 	end
 end
 

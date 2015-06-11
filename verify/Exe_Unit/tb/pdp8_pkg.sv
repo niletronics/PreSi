@@ -79,7 +79,7 @@ typedef struct packed {
 `define CMA 12'o7040
 `define CIA 12'o7041
 `define CLL 12'o7104
-`define CLA1    12'o7200
+`define CLA1    12'o7100
 `define CLA_CLL 12'o7300
 `define HLT 12'o7402
 `define OSR 12'o7404
@@ -115,7 +115,6 @@ typedef struct packed {
    logic SMA;
    logic SPA;
    logic CLA2;
-
 } pdp_op7_opcode_s;
 
 endpackage: pdp8_pkg

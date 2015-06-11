@@ -149,9 +149,7 @@ module instr_exec
          //
          BRANCH:
             begin
-
                intPC <= tempPC + 1;
-
                if (pdp_op7_opcode.CLA_CLL)
                   next_state <= CLA_CLL;
                else if (pdp_mem_opcode.TAD || pdp_mem_opcode.AND || pdp_mem_opcode.ISZ)

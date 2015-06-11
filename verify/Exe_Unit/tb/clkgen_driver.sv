@@ -54,8 +54,8 @@ module clkgen_driver
    initial begin
       int_reset_n = 0;
       # RESET_DURATION int_reset_n = 1;
-      # RUN_TIME
-      $finish;
+     // # RUN_TIME;
+     // $finish;
    end
 
    // Continuous assignment to output
